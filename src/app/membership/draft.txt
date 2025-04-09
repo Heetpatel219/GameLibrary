@@ -1,0 +1,217 @@
+"use client";
+import { useState } from "react";
+import { Check, X } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
+export default function MembershipPage() {
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+
+  const plans = [
+    {
+      name: "Basic",
+      description: "Perfect for casual gamers",
+      monthlyPrice: 9.99,
+      yearlyPrice: 99.99,
+      features: [
+        "Access to 50+ games",
+        "HD streaming (1080p)",
+        "Play on 1 device at a time",
+        "Basic customer support",
+        "New games added monthly"
+      ],
+      missing: [
+        "No offline downloads",
+        "No beta access",
+        "No exclusive content",
+        "No family sharing"
+      ],
+      bgGradient: "from-gray-700 to-gray-900",
+      buttonColor: "bg-gray-600 hover:bg-gray-500"
+    },
+    {
+      name: "Premium",
+      description: "Our most popular plan",
+      monthlyPrice: 14.99,
+      yearlyPrice: 149.99,
+      features: [
+        "Access to 100+ games",
+        "4K streaming",
+        "Play on 2 devices at a time",
+        "Priority customer support",
+        "New games added weekly",
+        "Offline downloads",
+        "Beta access to select titles"
+      ],
+      missing: [
+        "No exclusive content",
+        "Limited family sharing (2 accounts)"
+      ],
+      bgGradient: "from-blue-900 to-purple-900",
+      buttonColor: "bg-blue-600 hover:bg-blue-500",
+      isPopular: true
+    },
+    {
+      name: "Ultimate",
+      description: "For the hardcore gamer",
+      monthlyPrice: 24.99,
+      yearlyPrice: 239.99,
+      features: [
+        "Access to 200+ games",
+        "4K streaming with HDR",
+        "Play on up to 4 devices",
+        "24/7 premium support",
+        "Day-one access to new releases",
+        "Unlimited offline downloads",
+        "Full beta access to all titles",
+        "Exclusive in-game content",
+        "Full family sharing (up to 5 accounts)"
+      ],
+      missing: [],
+      bgGradient: "from-purple-900 to-indigo-900",
+      buttonColor: "bg-purple-600 hover:bg-purple-500"
+    }
+  ];
+
+  const getYearlySavings = (monthlyPrice: number, yearlyPrice: number) => {
+    const yearlyTotal = monthlyPrice * 12;
+    const savings = ((yearlyTotal - yearlyPrice) / yearlyTotal) * 100;
+    return Math.round(savings);
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <Header />
+      
+      <main className="py-16 px-4 max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Choose Your Membership Plan</h1>
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+            Unlock a world of gaming with our flexible membership options. Cancel anytime.
+          </p>
+        </div>
+
+        {/* Billing Toggle */}
+        <div className="flex justify-center mb-12">
+          <div className="bg-gray-900 p-1 rounded-full inline-flex">
+            <button
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                billingCycle === "monthly" 
+                  ? "bg-blue-600 text-white" 
+                  : "text-gray-400 hover:text-white"
+              }`}
+              onClick={() => setBillingCycle("monthly")}
+            >
+              Monthly
+            </button>
+            <button
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                billingCycle === "yearly" 
+                  ? "bg-blue-600 text-white" 
+                  : "text-gray-400 hover:text-white"
+              }`}
+              onClick={() => setBillingCycle("yearly")}
+            >
+              Yearly
+              {billingCycle === "yearly" && (
+                <span className="ml-2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                  Save up to 20%
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {plans.map((plan, index) => (
+            <div 
+              key={index} 
+              className={`bg-gradient-to-br ${plan.bgGradient} rounded-xl p-6 border border-gray-800 relative ${
+                plan.isPopular ? "md:-mt-4 md:mb-4" : ""
+              }`}
+            >
+              {plan.isPopular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    MOST POPULAR
+                  </span>
+                </div>
+              )}
+              
+              <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+              <p className="text-gray-400 mb-6">{plan.description}</p>
+              
+              <div className="mb-6">
+                <div className="flex items-end">
+                  <span className="text-4xl font-bold">
+                    ${billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice}
+                  </span>
+                  <span className="text-gray-400 ml-2">
+                    /{billingCycle === "monthly" ? "month" : "year"}
+                  </span>
+                </div>
+                
+                {billingCycle === "yearly" && (
+                  <div className="text-green-400 text-sm mt-2">
+                    Save {getYearlySavings(plan.monthlyPrice, plan.yearlyPrice)}% with annual billing
+                  </div>
+                )}
+              </div>
+              
+              <button 
+                className={`w-full py-3 rounded-lg font-semibold mb-6 transition-colors ${plan.buttonColor}`}
+              >
+                Get Started
+              </button>
+              
+              <div className="space-y-4">
+                <p className="font-medium">What's included:</p>
+                <ul className="space-y-2">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                  
+                  {plan.missing.map((feature, i) => (
+                    <li key={i} className="flex items-start text-gray-500">
+                      <X className="h-5 w-5 text-gray-600 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mt-20">
+          <h2 className="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="bg-gray-900 p-6 rounded-lg">
+              <h3 className="text-xl font-medium mb-3">Can I cancel at any time?</h3>
+              <p className="text-gray-400">Yes, you can cancel your membership at any time. There are no cancellation fees.</p>
+            </div>
+            <div className="bg-gray-900 p-6 rounded-lg">
+              <h3 className="text-xl font-medium mb-3">How do I change my plan?</h3>
+              <p className="text-gray-400">You can upgrade or downgrade your plan at any time from your account settings.</p>
+            </div>
+            <div className="bg-gray-900 p-6 rounded-lg">
+              <h3 className="text-xl font-medium mb-3">What payment methods do you accept?</h3>
+              <p className="text-gray-400">We accept all major credit cards, PayPal, and cryptocurrencies.</p>
+            </div>
+            <div className="bg-gray-900 p-6 rounded-lg">
+              <h3 className="text-xl font-medium mb-3">Are there any hidden fees?</h3>
+              <p className="text-gray-400">No hidden fees. The price you see is the price you pay, with no additional charges.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

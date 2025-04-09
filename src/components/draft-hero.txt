@@ -1,0 +1,200 @@
+"use client";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export default function HeroSection() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const games = [
+    {
+      id: "rdr2",
+      title: "Red Dead Redemption 2",
+      image: "/games/rdr2.jpg",
+      description: "An epic tale of life in America's unforgiving heartland",
+      price: "$59.99",
+      discount: "$39.99",
+      tag: "Best Seller",
+      genre: "Action Adventure"
+    },
+    {
+      id: "lastofus",
+      title: "The Last of Us Part II",
+      image: "/games/lastofus.webp",
+      description: "Experience a brutal post-apocalyptic world",
+      price: "$49.99",
+      discount: "$34.99",
+      tag: "Trending",
+      genre: "Survival Horror"
+    },
+    {
+      id: "alanwake",
+      title: "Alan Wake 2",
+      image: "/games/alanwake.webp",
+      description: "Dive into a psychological horror story",
+      price: "$59.99",
+      discount: null,
+      tag: "New Release",
+      genre: "Psychological Horror"
+    },
+    {
+      id: "re7",
+      title: "Resident Evil 7",
+      image: "/games/re7.jpg",
+      description: "Fear and isolation in a terrifying survival horror",
+      price: "$29.99",
+      discount: "$19.99",
+      tag: "Horror",
+      genre: "Survival Horror"
+    }
+  ];
+
+  // Simple auto-slide every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((current) => (current === games.length - 1 ? 0 : current + 1));
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [games.length]);
+
+  // Navigation functions
+  const nextSlide = () => {
+    setActiveIndex((current) => (current === games.length - 1 ? 0 : current + 1));
+  };
+
+  const prevSlide = () => {
+    setActiveIndex((current) => (current === 0 ? games.length - 1 : current - 1));
+  };
+
+  return (
+    <section className="w-full py-8 px-4 md:py-12 md:px-6 bg-gray-900">
+      <div className="max-w-6xl mx-auto">
+        {/* Main Content */}
+        <div className="flex flex-col md:flex-row items-center gap-8">
+          {/* Left Column */}
+          <div className="w-full md:w-1/2 mb-8 md:mb-0">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+              Find your next game here
+            </h1>
+            
+            <p className="text-gray-300 mb-6">
+              Explore our collection of games with great deals and instant access.
+            </p>
+            
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href="/browse"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              >
+                Browse Games
+              </Link>
+              <Link
+                href="/membership"
+                className="bg-transparent border border-blue-600 text-blue-400 hover:bg-blue-600/10 font-medium py-2 px-6 rounded transition-colors"
+              >
+                Join Membership
+              </Link>
+            </div>
+          </div>
+
+          {/* Carousel - Right Column */}
+          <div className="w-full md:w-1/2 relative">
+            {/* Navigation buttons */}
+            <button 
+              onClick={prevSlide}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 text-white rounded p-1"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <button 
+              onClick={nextSlide}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 text-white rounded p-1"
+              aria-label="Next slide"
+            >
+              <ChevronRight size={20} />
+            </button>
+          
+            {/* Fixed card container height */}
+            <div className="h-[420px] relative rounded-lg overflow-hidden border border-gray-700">
+              {games.map((game, index) => (
+                <div 
+                  key={game.id} 
+                  className={`absolute inset-0 transition-opacity duration-500 ${
+                    index === activeIndex ? "opacity-100" : "opacity-0 pointer-events-none"
+                  }`}
+                >
+                  {/* Card layout */}
+                  <div className="h-full flex flex-col">
+                    {/* Image container with proper ratio */}
+                    <div className="relative h-[200px]">
+                      <Image 
+                        src={game.image}
+                        alt={game.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover"
+                        priority={index === activeIndex}
+                      />
+                      
+                      <div className="absolute top-2 right-2">
+                        <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                          {game.tag}
+                        </span>
+                      </div>
+
+                      {/* Optional dark overlay for better text visibility */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-50"></div>
+                    </div>
+                    
+                    {/* Content area */}
+                    <div className="p-4 flex-grow bg-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold mb-1">{game.title}</h3>
+                        <p className="text-sm text-gray-300 mb-3 line-clamp-2">{game.description}</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-auto">
+                        <div>
+                          {game.discount ? (
+                            <>
+                              <span className="text-gray-400 line-through text-sm mr-2">{game.price}</span>
+                              <span className="text-white font-bold">{game.discount}</span>
+                            </>
+                          ) : (
+                            <span className="text-white font-bold">{game.price}</span>
+                          )}
+                        </div>
+                        
+                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                          View Game
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Simple dots */}
+            <div className="flex justify-center mt-4 space-x-2">
+              {games.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveIndex(index)}
+                  className={`h-2 w-2 rounded-full ${
+                    index === activeIndex ? "bg-blue-600" : "bg-gray-600"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
