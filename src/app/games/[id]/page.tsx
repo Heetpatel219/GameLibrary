@@ -113,13 +113,76 @@ export default function GameDetailPage() {
   const inWishlist = id ? isInWishlist(id) : false;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
+      {game && !loading && (
+        <div className="relative w-full h-[60vh] mb-8">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0">
+            <Image
+              src={game.background_image}
+              alt={game.name}
+              fill
+              className="object-cover"
+              priority
+              quality={100}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/20" />
+          </div>
+
+          {/* Content Container */}
+          <div className="relative h-full max-w-6xl mx-auto px-4">
+            <div className="absolute bottom-8 left-4 right-4 flex flex-col md:flex-row gap-8 items-end">
+              {/* Game Cover */}
+              <div className="w-full md:w-[300px] shrink-0">
+                <div className="aspect-[3/4] relative rounded-lg overflow-hidden shadow-2xl">
+                  <Image
+                    src={game.background_image}
+                    alt={game.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              </div>
+
+              {/* Game Info */}
+              <div className="flex-1 space-y-4">
+                <h1 className="text-4xl font-bold">{game.name}</h1>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                    <span className="font-medium">{game.rating.toFixed(1)}</span>
+                  </div>
+                  
+                  {game.released && (
+                    <div className="bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm">
+                      Released: {new Date(game.released).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {game.genres?.map((genre) => (
+                    <span 
+                      key={genre.name}
+                      className="px-3 py-1.5 text-sm bg-black/30 backdrop-blur-sm rounded-full"
+                    >
+                      {genre.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="px-4 py-8 max-w-6xl mx-auto">
         {loading ? (
-          <div className="flex justify-center py-20">
-            <p>Loading game details...</p>
+          <div className="flex justify-center items-center h-64">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : error ? (
           <div className="text-center text-red-500 py-10">
@@ -129,117 +192,69 @@ export default function GameDetailPage() {
             </Link>
           </div>
         ) : game ? (
-          <div>
-            {/* Back button */}
-            <Link href="/browse" className="flex items-center text-blue-500 mb-6">
-              <ChevronLeft size={20} />
-              <span>Back to Games</span>
-            </Link>
+          <div className="space-y-8">
+            {/* Price and Actions */}
+            <div className="bg-gray-800 p-4 rounded-lg mb-6">
+              <div className="text-xl font-bold mb-4">
+                ${getPrice(game.id, game.rating).toFixed(2)}
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={handleAddToCart}
+                  disabled={inCart}
+                  className={`flex items-center gap-2 px-4 py-2 rounded ${
+                    inCart 
+                      ? 'bg-green-700 text-white' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  <ShoppingCart size={16} />
+                  {inCart ? 'In Cart' : 'Add to Cart'}
+                </button>
+                
+                <button 
+                  onClick={handleAddToWishlist}
+                  disabled={inWishlist}
+                  className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                    inWishlist
+                      ? 'border-pink-600 text-pink-500'
+                      : 'border-gray-600 text-gray-300 hover:border-pink-600 hover:text-pink-500'
+                  }`}
+                >
+                  <Heart size={16} className={inWishlist ? "fill-pink-500" : ""} />
+                  {inWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                </button>
+              </div>
+              
+              {addedToCart && (
+                <div className="mt-2 text-green-500 text-sm animate-pulse">
+                  Added to cart!
+                </div>
+              )}
+            </div>
             
-            {/* Game Header */}
-            <div className="flex flex-col md:flex-row gap-6 mb-8">
-              {/* Game Image */}
-              <div className="w-full md:w-1/3">
-                <div className="rounded-lg overflow-hidden bg-gray-800">
-                  {game.background_image ? (
-                    <Image
-                      src={game.background_image}
-                      alt={game.name}
-                      width={500}
-                      height={300}
-                      className="w-full h-auto object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-64 bg-gray-800 flex items-center justify-center">
-                      <p className="text-gray-500">No image available</p>
-                    </div>
-                  )}
+            {/* Platforms & Genres */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <h3 className="text-sm font-medium mb-2 text-gray-400">Platforms</h3>
+                <div className="flex flex-wrap gap-2">
+                  {game.platforms?.slice(0, 5).map((p, index) => (
+                    <span key={index} className="bg-gray-700 px-2 py-1 text-xs rounded">
+                      {p.platform.name}
+                    </span>
+                  ))}
                 </div>
               </div>
               
-              {/* Game Info */}
-              <div className="w-full md:w-2/3">
-                <h1 className="text-2xl font-bold mb-2">{game.name}</h1>
-                
-                <div className="flex items-center mb-4">
-                  <div className="flex items-center text-yellow-500 mr-4">
-                    <Star size={16} className="mr-1" />
-                    <span>{game.rating.toFixed(1)}</span>
-                  </div>
-                  
-                  {game.released && (
-                    <div className="text-gray-400 text-sm">
-                      Released: {game.released}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Price and Actions */}
-                <div className="bg-gray-800 p-4 rounded-lg mb-6">
-                  {/* Calculate price based on id and rating */}
-                  <div className="text-xl font-bold mb-4">
-                    ${getPrice(game.id, game.rating).toFixed(2)}
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <button 
-                      onClick={handleAddToCart}
-                      disabled={inCart}
-                      className={`flex items-center gap-2 px-4 py-2 rounded ${
-                        inCart 
-                          ? 'bg-green-700 text-white' 
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
-                    >
-                      <ShoppingCart size={16} />
-                      {inCart ? 'In Cart' : 'Add to Cart'}
-                    </button>
-                    
-                    <button 
-                      onClick={handleAddToWishlist}
-                      disabled={inWishlist}
-                      className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                        inWishlist
-                          ? 'border-pink-600 text-pink-500'
-                          : 'border-gray-600 text-gray-300 hover:border-pink-600 hover:text-pink-500'
-                      }`}
-                    >
-                      <Heart size={16} className={inWishlist ? "fill-pink-500" : ""} />
-                      {inWishlist ? 'In Wishlist' : 'Add to Wishlist'}
-                    </button>
-                  </div>
-                  
-                  {/* Feedback message */}
-                  {addedToCart && (
-                    <div className="mt-2 text-green-500 text-sm animate-pulse">
-                      Added to cart!
-                    </div>
-                  )}
-                </div>
-                
-                {/* Platforms & Genres */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2 text-gray-400">Platforms</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {game.platforms?.slice(0, 5).map((p, index) => (
-                        <span key={index} className="bg-gray-700 px-2 py-1 text-xs rounded">
-                          {p.platform.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2 text-gray-400">Genres</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {game.genres?.map((genre, index) => (
-                        <span key={index} className="bg-gray-700 px-2 py-1 text-xs rounded">
-                          {genre.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              <div>
+                <h3 className="text-sm font-medium mb-2 text-gray-400">Genres</h3>
+                <div className="flex flex-wrap gap-2">
+                  {game.genres?.map((genre, index) => (
+                    <span key={index} className="bg-gray-700 px-2 py-1 text-xs rounded">
+                      {genre.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>

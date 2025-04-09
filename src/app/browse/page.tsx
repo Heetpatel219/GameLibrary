@@ -33,8 +33,12 @@ interface Platform {
 }
 
 const BrowsePage = () => {
-  // Move useCart to the top level of the component
   const { addToCart, addToWishlist, isInCart, isInWishlist } = useCart();
+  
+  // Add these new pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage] = useState(20);
   
   // State for filters and games
   const [games, setGames] = useState<Game[]>([]);
@@ -58,42 +62,44 @@ const BrowsePage = () => {
   const API_BASE = 'https://api.rawg.io/api';
 
   // Fetch games based on filters
-  useEffect(() => {
-    const fetchGames = async () => {
-      setLoading(true);
-      try {
-        let url = `${API_BASE}/games?key=${API_KEY}&page_size=20&ordering=${ordering}`;
-        
-        if (selectedGenre) {
-          url += `&genres=${selectedGenre}`;
-        }
-        
-        if (selectedPlatform) {
-          url += `&platforms=${selectedPlatform}`;
-        }
-        
-        if (searchQuery) {
-          url += `&search=${encodeURIComponent(searchQuery)}`;
-        }
-
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.results) {
-          setGames(data.results);
-        } else {
-          setError('Failed to fetch games');
-        }
-      } catch (err) {
-        setError('An error occurred while fetching games');
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchGames = async () => {
+    setLoading(true);
+    try {
+      let url = `${API_BASE}/games?key=${API_KEY}&page=${currentPage}&page_size=${itemsPerPage}&ordering=${ordering}`;
+      
+      if (selectedGenre) {
+        url += `&genres=${selectedGenre}`;
       }
-    };
+      
+      if (selectedPlatform) {
+        url += `&platforms=${selectedPlatform}`;
+      }
+      
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
 
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.results) {
+        setGames(data.results);
+        // Calculate total pages from the count
+        setTotalPages(Math.ceil(data.count / itemsPerPage));
+      } else {
+        setError('Failed to fetch games');
+      }
+    } catch (err) {
+      setError('An error occurred while fetching games');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchGames();
-  }, [API_KEY, selectedGenre, selectedPlatform, searchQuery, ordering]);
+  }, [API_KEY, selectedGenre, selectedPlatform, searchQuery, ordering, currentPage]);
 
   // Fetch genres
   useEffect(() => {
@@ -131,14 +137,33 @@ const BrowsePage = () => {
     fetchPlatforms();
   }, [API_KEY]);
 
-  // Handle search input
+  // Update these filter handlers
+  const handleGenreChange = (genreId: number | null) => {
+    setSelectedGenre(genreId);
+    setCurrentPage(1); // Reset to first page
+    setShowGenreDropdown(false);
+  };
+
+  const handlePlatformChange = (platformId: number | null) => {
+    setSelectedPlatform(platformId);
+    setCurrentPage(1); // Reset to first page
+    setShowPlatformDropdown(false);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search is already handled by the useEffect dependency
+    setCurrentPage(1); // Reset to first page
+  };
+
+  // Add this function with your other functions
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
       <main className="px-4 py-8 max-w-7xl mx-auto">
@@ -182,10 +207,7 @@ const BrowsePage = () => {
                 <div className="absolute z-10 mt-1 w-60 bg-gray-800 border border-gray-700 rounded-md shadow-lg overflow-y-auto max-h-80">
                   <div 
                     className="p-2 hover:bg-gray-700 cursor-pointer"
-                    onClick={() => {
-                      setSelectedGenre(null);
-                      setShowGenreDropdown(false);
-                    }}
+                    onClick={() => handleGenreChange(null)}
                   >
                     All Genres
                   </div>
@@ -193,10 +215,7 @@ const BrowsePage = () => {
                     <div
                       key={genre.id}
                       className="p-2 hover:bg-gray-700 cursor-pointer"
-                      onClick={() => {
-                        setSelectedGenre(genre.id);
-                        setShowGenreDropdown(false);
-                      }}
+                      onClick={() => handleGenreChange(genre.id)}
                     >
                       {genre.name}
                     </div>
@@ -219,10 +238,7 @@ const BrowsePage = () => {
                 <div className="absolute z-10 mt-1 w-60 bg-gray-800 border border-gray-700 rounded-md shadow-lg overflow-y-auto max-h-80">
                   <div 
                     className="p-2 hover:bg-gray-700 cursor-pointer"
-                    onClick={() => {
-                      setSelectedPlatform(null);
-                      setShowPlatformDropdown(false);
-                    }}
+                    onClick={() => handlePlatformChange(null)}
                   >
                     All Platforms
                   </div>
@@ -230,10 +246,7 @@ const BrowsePage = () => {
                     <div
                       key={platform.id}
                       className="p-2 hover:bg-gray-700 cursor-pointer"
-                      onClick={() => {
-                        setSelectedPlatform(platform.id);
-                        setShowPlatformDropdown(false);
-                      }}
+                      onClick={() => handlePlatformChange(platform.id)}
                     >
                       {platform.name}
                     </div>
@@ -321,7 +334,7 @@ const BrowsePage = () => {
                 Genre: {genres.find(g => g.id === selectedGenre)?.name}
                 <button 
                   className="ml-2 hover:text-blue-300"
-                  onClick={() => setSelectedGenre(null)}
+                  onClick={() => handleGenreChange(null)}
                 >
                   ×
                 </button>
@@ -333,7 +346,7 @@ const BrowsePage = () => {
                 Platform: {platforms.find(p => p.id === selectedPlatform)?.name}
                 <button 
                   className="ml-2 hover:text-blue-300"
-                  onClick={() => setSelectedPlatform(null)}
+                  onClick={() => handlePlatformChange(null)}
                 >
                   ×
                 </button>
@@ -453,6 +466,32 @@ const BrowsePage = () => {
             ))}
           </div>
         )}
+        
+        {/* Pagination */}
+        <div className="mt-8 flex justify-center items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 rounded-md bg-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            Previous
+          </button>
+          
+          <div className="flex items-center gap-2">
+            {/* Show current page and total pages */}
+            <span className="text-gray-400">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="px-4 py-2 rounded-md bg-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            Next
+          </button>
+        </div>
       </main>
       
       <Footer />

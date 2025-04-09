@@ -62,7 +62,7 @@ export default function MembershipPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
       <main className="py-12 px-4 max-w-6xl mx-auto">

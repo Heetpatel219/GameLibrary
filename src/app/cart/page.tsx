@@ -5,26 +5,68 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, CreditCard, ChevronLeft } from "lucide-react";
+import { Trash2, CreditCard, ChevronLeft, AlertCircle, ChevronRight } from "lucide-react";
 import CheckoutModal from "@/components/CheckoutModal";
 import { useRouter } from "next/navigation";
 
+const DuplicateGamesError = ({ error, router }: { error: any; router: any }) => {
+  return (
+    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 mb-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2 bg-yellow-500/10 rounded-full">
+          <AlertCircle className="h-6 w-6 text-yellow-500" />
+        </div>
+        <h3 className="text-lg font-medium text-yellow-500">{error.title}</h3>
+      </div>
+
+      <p className="text-gray-300 mb-4">{error.message}</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        {error.games.map((game: any) => (
+          <div
+            key={game.id}
+            className="flex items-center gap-3 bg-gray-700/30 rounded-lg p-3"
+          >
+            <div className="relative w-12 h-12">
+              <Image
+                src={game.image}
+                alt={game.name}
+                fill
+                className="object-cover rounded"
+              />
+            </div>
+            <span className="text-sm text-gray-300">{game.name}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={() => router.push("/library")}
+          className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+        >
+          View in Library
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function CartPage() {
-  // Use cart context instead of local state
   const { cartItems, removeFromCart, updateQuantity, cartTotal } = useCart();
 
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<{ title: string; message: string; games: any[] } | null>(null);
   const router = useRouter();
 
-  // Calculate totals
   const subtotal = cartTotal;
-  const discount = promoApplied ? subtotal * 0.1 : 0; // 10% discount
-  const tax = (subtotal - discount) * 0.07; // 7% tax
+  const discount = promoApplied ? subtotal * 0.1 : 0;
+  const tax = (subtotal - discount) * 0.07;
   const total = subtotal - discount + tax;
 
-  // Apply promo code
   const applyPromoCode = (e: React.FormEvent) => {
     e.preventDefault();
     if (promoCode.toLowerCase() === "game10") {
@@ -32,8 +74,9 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckoutSuccess = async () => {
+  const handleCheckout = async () => {
     try {
+      setDuplicateError(null);
       const response = await fetch("/api/purchases", {
         method: "POST",
         headers: {
@@ -45,16 +88,37 @@ export default function CartPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to save purchase");
+        if (response.status === 400 && data.error) {
+          setDuplicateError(data.error);
+          return;
+        }
+        throw new Error("Checkout failed");
       }
 
-      // Clear the cart
-      localStorage.removeItem("cartItems");
-      // Redirect to library
-      router.push("/library");
+      if (data.duplicates) {
+        const duplicateIds = data.duplicates.games.map((game: any) => game.id);
+        cartItems.forEach((item) => {
+          if (duplicateIds.includes(item.id)) {
+            removeFromCart(item.id);
+          }
+        });
+
+        setDuplicateError({
+          title: "Duplicate Games Found",
+          message: `${data.duplicates.count} game(s) were already in your library and have been removed from cart.`,
+          games: data.duplicates.games,
+        });
+      }
+
+      if (data.success && !data.duplicates) {
+        localStorage.removeItem("cartItems");
+        router.push("/library");
+      }
     } catch (error) {
-      console.error("Error saving purchase:", error);
+      console.error("Error during checkout:", error);
     }
   };
 
@@ -64,6 +128,8 @@ export default function CartPage() {
 
       <main className="flex-grow px-4 py-8 max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold mb-8">Your Cart</h1>
+
+        {duplicateError && <DuplicateGamesError error={duplicateError} router={router} />}
 
         {cartItems.length === 0 ? (
           <div className="text-center py-12">
@@ -81,7 +147,6 @@ export default function CartPage() {
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Cart Items */}
             <div className="w-full lg:w-2/3">
               <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
                 <div className="hidden md:grid md:grid-cols-12 text-sm text-gray-400 p-4 border-b border-gray-700">
@@ -96,7 +161,6 @@ export default function CartPage() {
                     key={item.id}
                     className="grid grid-cols-1 md:grid-cols-12 p-4 border-b border-gray-700 last:border-b-0 items-center"
                   >
-                    {/* Product Info */}
                     <div className="col-span-6 flex items-center space-x-4 mb-4 md:mb-0">
                       <div className="flex-shrink-0 w-20 h-20 bg-gray-700 rounded overflow-hidden relative">
                         <Image
@@ -114,7 +178,6 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    {/* Price */}
                     <div className="col-span-2 text-center text-gray-300 mb-2 md:mb-0">
                       <div className="md:hidden inline text-gray-500 mr-2">
                         Price:
@@ -122,7 +185,6 @@ export default function CartPage() {
                       ${item.price.toFixed(2)}
                     </div>
 
-                    {/* Quantity */}
                     <div className="col-span-2 text-center mb-2 md:mb-0">
                       <div className="md:hidden inline text-gray-500 mr-2">
                         Quantity:
@@ -159,7 +221,6 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    {/* Subtotal and Remove */}
                     <div className="col-span-2 flex items-center justify-between md:justify-end">
                       <div>
                         <div className="md:hidden inline text-gray-500 mr-2">
@@ -191,7 +252,6 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="w-full lg:w-1/3">
               <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                 <h2 className="text-lg font-bold mb-4">Order Summary</h2>
@@ -220,7 +280,6 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Promo Code */}
                 <form onSubmit={applyPromoCode} className="mb-6">
                   <label className="block text-sm text-gray-400 mb-2">
                     Promo Code
@@ -260,7 +319,6 @@ export default function CartPage() {
                   )}
                 </form>
 
-                {/* Checkout Button */}
                 <button
                   onClick={() => setIsCheckoutModalOpen(true)}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded flex items-center justify-center transition-colors"
@@ -269,7 +327,6 @@ export default function CartPage() {
                   Proceed to Checkout
                 </button>
 
-                {/* Student project disclaimer */}
                 <p className="text-xs text-gray-500 text-center mt-4">
                   Note: This is a student project for WEB 422. No actual
                   payments will be processed.
@@ -285,7 +342,7 @@ export default function CartPage() {
       <CheckoutModal
         isOpen={isCheckoutModalOpen}
         onClose={() => setIsCheckoutModalOpen(false)}
-        onSuccess={handleCheckoutSuccess}
+        onSuccess={handleCheckout}
         total={total}
       />
     </div>
