@@ -38,22 +38,30 @@ export default function Library() {
             'user-id': userData.sub
           }
         });
-        const data: { success: boolean; games: Game[]; error?: string } = await response.json();
+
+        const data = await response.json();
 
         if (!data.success) {
           throw new Error(data.error || "Failed to fetch games");
         }
 
-        // Remove duplicates based on game id
-        const uniqueGames = Array.from(
-          new Map(
-            data.games.map((game: Game) => [game.id, game])
-          ).values()
+        if (!Array.isArray(data.games)) {
+          console.warn("No games returned from the API");
+          setPurchasedGames([]);
+          return;
+        }
+
+        // Remove duplicates and sort
+        const games = Array.isArray(data.games) ? (data.games as Game[]) : [];
+        const uniqueGames: Game[] = Array.from(
+          new Map(games.map((game) => [game.id, game])).values()
         );
 
-        // Sort games alphabetically by name
-        const sortedGames = uniqueGames.sort((a: Game, b: Game) => a.name.localeCompare(b.name)
-        );
+        const sortedGames: Game[] = uniqueGames.sort((a, b) => {
+          const nameA = a.name || "";
+          const nameB = b.name || "";
+          return nameA.localeCompare(nameB);
+        });
 
         setPurchasedGames(sortedGames);
       } catch (error) {

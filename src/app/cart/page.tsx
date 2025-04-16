@@ -60,6 +60,7 @@ export default function CartPage() {
   const [promoApplied, setPromoApplied] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [duplicateError, setDuplicateError] = useState<{ title: string; message: string; games: any[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const subtotal = cartTotal;
@@ -77,10 +78,19 @@ export default function CartPage() {
   const handleCheckout = async () => {
     try {
       setDuplicateError(null);
+      const user = localStorage.getItem('user');
+      const userData = user ? JSON.parse(user) : null;
+
+      if (!userData) {
+        setError('Please sign in to proceed');
+        return;
+      }
+
       const response = await fetch("/api/purchases", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "user-id": userData.sub
         },
         body: JSON.stringify({
           games: cartItems,
@@ -98,27 +108,15 @@ export default function CartPage() {
         throw new Error("Checkout failed");
       }
 
-      if (data.duplicates) {
-        const duplicateIds = data.duplicates.games.map((game: any) => game.id);
-        cartItems.forEach((item) => {
-          if (duplicateIds.includes(item.id)) {
-            removeFromCart(item.id);
-          }
-        });
-
-        setDuplicateError({
-          title: "Duplicate Games Found",
-          message: `${data.duplicates.count} game(s) were already in your library and have been removed from cart.`,
-          games: data.duplicates.games,
-        });
-      }
-
-      if (data.success && !data.duplicates) {
+      // Clear cart and redirect to library only on successful purchase
+      if (data.success) {
         localStorage.removeItem("cartItems");
+        
         router.push("/library");
       }
     } catch (error) {
       console.error("Error during checkout:", error);
+      setError("Failed to complete checkout. Please try again.");
     }
   };
 
