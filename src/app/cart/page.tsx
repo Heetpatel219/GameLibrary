@@ -64,7 +64,7 @@ export default function CartPage() {
 
   const subtotal = cartTotal;
   const discount = promoApplied ? subtotal * 0.1 : 0;
-  const tax = (subtotal - discount) * 0.07;
+  const tax = (subtotal - discount) * 0.13;
   const total = subtotal - discount + tax;
 
   const applyPromoCode = (e: React.FormEvent) => {
@@ -270,7 +270,7 @@ export default function CartPage() {
                   )}
 
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Tax (7%)</span>
+                    <span className="text-gray-400">Tax (13%)</span>
                     <span>${tax.toFixed(2)}</span>
                   </div>
 
