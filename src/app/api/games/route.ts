@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 
-export async function GET() {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const { db } = await connectToDatabase();
-    const games = await db.collection("games").find({}).toArray();
+    const game = await db.collection("games").findOne({ id: params.id });
     
-    return NextResponse.json({ success: true, games });
+    if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+    
+    return NextResponse.json(game);
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to fetch games" }, { status: 500 });
+    return NextResponse.json({ error: "External Error" }, { status: 500 });
   }
 }

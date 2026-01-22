@@ -1,26 +1,30 @@
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
 
-interface GameCardProps {
-  title: string;
-  description: string;
-  imageUrl: string;
+interface Game {
+  id: string;
+  name: string;
+  image: string;
+  genre: string;
 }
 
-export default function GameCard({ title, description, imageUrl }: GameCardProps) {
+export default function GameCard({ game }: { game: Game }) {
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
-      <Image
-        src={imageUrl}
-        alt={`${title} Thumbnail`}
-        width={300}
-        height={200}
-        className="rounded-lg"
-      />
-      <h4 className="text-xl font-semibold mt-4">{title}</h4>
-      <p className="text-gray-400 mt-2">{description}</p>
-      <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
-        Learn More
-      </button>
-    </div>
+    <Link href={`/games/${game.id}`}>
+      <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-all cursor-pointer group">
+        <div className="relative h-48 w-full">
+          <Image 
+            src={game.image} 
+            alt={game.name} 
+            fill 
+            className="object-cover group-hover:scale-105 transition-transform"
+          />
+        </div>
+        <div className="p-4">
+          <h3 className="text-white font-bold truncate">{game.name}</h3>
+          <p className="text-gray-400 text-sm">{game.genre}</p>
+        </div>
+      </div>
+    </Link>
   );
 }
