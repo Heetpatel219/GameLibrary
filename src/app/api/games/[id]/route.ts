@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 
-// The second argument MUST match the folder name [id]
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Define as a Promise
 ) {
   try {
+    const { id } = await params; // Await the params here
     const { db } = await connectToDatabase();
     
-    // params.id comes directly from the folder name [id]
-    const game = await db.collection("games").findOne({ id: params.id });
+    const game = await db.collection("games").findOne({ id: id });
 
     if (!game) {
       return NextResponse.json({ error: "Game not found" }, { status: 404 });
