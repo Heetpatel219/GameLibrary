@@ -49,77 +49,70 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const { games, totalAmount } = await req.json();
+    
+    // Get user ID from headers
+    const userId = req.headers.get('user-id');
+    
+    if (!userId) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "User not authenticated" 
+      }, { status: 401 });
+    }
+
     const { db } = await connectToDatabase();
 
-    // Get user from request headers
-    const user = req.headers.get('user-id');
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Fetch existing purchases for the user
+    const existingPurchases = await db.collection("purchases")
+      .find({ userId: userId })
+      .toArray();
+
+    // Extract all previously purchased game IDs
+    const purchasedGameIds = existingPurchases.flatMap(
+      (purchase: any) => purchase.games.map((game: any) => game.id)
+    );
+
+    // Find duplicates in current cart
+    const duplicateGames = games.filter(
+      (game: any) => purchasedGameIds.includes(game.id)
+    );
+
+    // Find new games to purchase
+    const newGames = games.filter(
+      (game: any) => !purchasedGameIds.includes(game.id)
+    );
+
+    // If any games in the request are already owned, block the purchase
+    if (duplicateGames.length > 0) {
+      const gameNames = duplicateGames.map((g: any) => g.name).join(", ");
+      return NextResponse.json({
+        success: false,
+        error: {
+          title: "Games Already Owned",
+          message: "These games are already in your library",
+          details: `You already own: ${gameNames}`,
+          count: duplicateGames.length,
+          games: duplicateGames
+        }
+      }, { status: 400 });
     }
 
-    // Get existing games for the user
-    const existingPurchases = await db.collection("purchases").find({
-      userId: "user_id" // Replace with actual user ID when auth is implemented
-    }).toArray();
-
-    const existingGames = existingPurchases.flatMap(purchase => purchase.games);
-    
-    // Filter out duplicates and track them
-    const duplicateGames: any[] = [];
-    const newGames = games.filter((game: any) => {
-      const isDuplicate = existingGames.some((existing: any) => existing.id === game.id);
-      if (isDuplicate) {
-        duplicateGames.push(game);
-      }
-      return !isDuplicate;
-    });
-
-// If all games are duplicates, return error
-if (newGames.length === 0) {
-  const gameNames = duplicateGames.map(game => game.name).join(', ');
-  return NextResponse.json({
-    success: false,
-    error: {
-      title: "Games Already Owned",
-      message: "These games are already in your library",
-      details: `You already own: ${gameNames}`,
-      count: duplicateGames.length,
-      games: duplicateGames.map(game => ({
-        id: game.id,
-        name: game.name,
-        image: game.image || game.background_image
-      }))
-    }
-  }, { status: 400 });
-}
-
-    // Calculate new total amount for non-duplicate games
-    const newTotalAmount = newGames.reduce((sum: number, game: any) => sum + game.price, 0);
-
+    // Create purchase record
     const purchase = {
-      userId: "user_id",
+      userId,
       games: newGames,
-      totalAmount: newTotalAmount,
+      totalAmount,
       purchaseDate: new Date(),
     };
 
     await db.collection("purchases").insertOne(purchase);
 
-    return NextResponse.json({ 
-      success: true,
-      duplicates: duplicateGames.length > 0 ? {
-        count: duplicateGames.length,
-        games: duplicateGames
-      } : null
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to save purchase" },
-      { status: 500 }
-    );
+    console.error("POST Error:", error);
+    return NextResponse.json({ 
+      success: false, 
+      error: "Internal server error" 
+    }, { status: 500 });
   }
 }
