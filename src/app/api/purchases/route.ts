@@ -51,6 +51,16 @@ export async function POST(req: Request) {
     const { games, totalAmount } = await req.json();
     const { db } = await connectToDatabase();
 
+    // Get user from request headers
+    const user = req.headers.get('user-id');
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     // Get existing games for the user
     const existingPurchases = await db.collection("purchases").find({
       userId: "user_id" // Replace with actual user ID when auth is implemented
